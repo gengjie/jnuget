@@ -1,9 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package ru.aristar.jnuget;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,7 +14,7 @@ public class Version {
     {
         Matcher matcher = parser.matcher(input);
         if(!matcher.find()){
-            throw new Exception("РђСЂРіСѓРјРµРЅС‚ РЅРµРїСЂР°РІРёР»СЊРЅС‹Р№.");
+            throw new Exception("Аргумент неправильный.");
         }
         int major = ParseInt(matcher.group(1));
         int minor = ParseInt(matcher.group(2));
