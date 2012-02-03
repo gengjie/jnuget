@@ -1,0 +1,102 @@
+package ru.aristar.jnuget.rss;
+
+import java.io.InputStream;
+import static org.junit.Assert.*;
+import org.junit.Test;
+import ru.aristar.jnuget.Version;
+import ru.aristar.jnuget.files.NuspecFile;
+
+/**
+ *
+ * @author sviridov
+ */
+public class EntryPropertiesTest {
+
+    @Test
+    public void testConvertNuspecToEntryProperties() throws Exception {
+        //GIVEN
+        InputStream inputStream = this.getClass().getResourceAsStream("/NUnit.nuspec.xml");
+        NuspecFile nuspecFile = NuspecFile.Parse(inputStream);
+        EntryProperties properties = new EntryProperties();
+        //WHEN        
+        properties.setNuspec(nuspecFile);
+        //THEN
+        assertEquals("Версия пакета", new Version(2, 5, 9, "10348"), properties.getVersion());
+        assertEquals("Заголовок", "", properties.getTitle());
+        assertEquals("URL иконки", "", properties.getIconUrl());
+        assertEquals("URL лицензии", "", properties.getLicenseUrl());
+        assertEquals("URL проекта", "", properties.getProjectUrl());
+        assertEquals("URL отчета", "", properties.getReportAbuseUrl());
+        assertEquals("Требуется лицензия", false, properties.getRequireLicenseAcceptance());
+        assertEquals("Описание пакета", "Пакет модульного тестирования", properties.getDescription());
+        assertEquals("Замечания крелизу", "", properties.getReleaseNotes());
+        assertEquals("Язык", "", properties.getLanguage());
+        assertEquals("Стоимость пакета", Double.valueOf(0), properties.getPrice());
+        assertEquals("Зависимости пакета", "", properties.getDependencies());
+        assertEquals("Внешний URI", "", properties.getExternalPackageUri());
+        assertEquals("Категории", "", properties.getCategories());
+        assertEquals("Права", "Copyright 2011", properties.getCopyright());
+        assertEquals("Тип пакета", "", properties.getPackageType());
+        assertArrayEquals("Теги пакета", new String[]{"Unit test"}, properties.getTags().toArray());
+        assertEquals("Общее описание", "", properties.getSummary());
+    }
+
+    /**
+     * Проверка генерации информации о пакете с зависимостями
+     *
+     * @throws Exception ошибка в процессе теста
+     */
+    @Test
+    public void testConvertNuspecWithDependencies() throws Exception {
+        //GIVEN
+        InputStream inputStream = this.getClass().getResourceAsStream("/Dependencies.nuspec.xml");
+        NuspecFile nuspecFile = NuspecFile.Parse(inputStream);
+        EntryProperties properties = new EntryProperties();
+        //WHEN        
+        properties.setNuspec(nuspecFile);    
+        //THEN
+        assertEquals("Зависимости пакета", "NLog:2.0.0.2000", properties.getDependencies());
+    }
+
+    /**
+     * Тест распознавания свойств пакета (RSS) из XML
+     *
+     * @throws Exception ошибка в процессе теста
+     */
+    @Test
+    public void testParseProperties() throws Exception {
+        //GIVEN
+        InputStream inputStream = this.getClass().getResourceAsStream("/NUnit.properties.xml");
+        //WHEN
+        EntryProperties entryProperties = EntryProperties.parse(inputStream);
+        //THEN
+        assertEquals("Версия пакета", "2.5.9.10348", entryProperties.getVersion().toString());
+        assertEquals("Заголовок", "", entryProperties.getTitle());
+        assertEquals("URL иконки", "", entryProperties.getIconUrl());
+        assertEquals("URL лицензии", "", entryProperties.getLicenseUrl());
+        assertEquals("URL проекта", "", entryProperties.getProjectUrl());
+        assertEquals("URL отчета", "", entryProperties.getReportAbuseUrl());
+        assertEquals("Количество загрузок пакета", Integer.valueOf(-1), entryProperties.getDownloadCount());
+        assertEquals("Количество загрузок версий", Integer.valueOf(-1), entryProperties.getVersionDownloadCount());
+        assertEquals("Рейтинг (количество)", Integer.valueOf(0), entryProperties.getRatingsCount());
+        assertEquals("Рейтинг версии (количество)", Integer.valueOf(-1), entryProperties.getVersionRatingsCount());
+        assertEquals("Рейтинг", Double.valueOf(-1), entryProperties.getRating());
+        assertEquals("Рейтинг версии", Double.valueOf(-1), entryProperties.getVersionRating());
+        assertEquals("Требуется лицензия", false, entryProperties.getRequireLicenseAcceptance());
+        assertEquals("Описание пакета", "Пакет модульного тестирования", entryProperties.getDescription());
+        assertEquals("Замечания крелизу", "", entryProperties.getReleaseNotes());
+        assertEquals("Язык", "", entryProperties.getLanguage());
+        assertEquals("Дата публикации пакета", javax.xml.bind.DatatypeConverter.parseDateTime("2011-09-23T05:18:55.5327281Z").getTime(), entryProperties.getPublished());
+        assertEquals("Стоимость пакета", Double.valueOf(0), entryProperties.getPrice());
+        assertEquals("Зависимости пакета", "", entryProperties.getDependencies());
+        assertEquals("Хеш пакета", "CoknSJBGJ7kao2P6y9E9BuL1IkhP5LLhZ+ImtsgdxzFDpjs0QtRVOV8kxysakJu3cvw5O0hImcnVloCaQ9+Nmg==", entryProperties.getPackageHash());
+        assertEquals("Размер пакета", Long.valueOf(214905), entryProperties.getPackageSize());
+        assertEquals("Внешний URI", "", entryProperties.getExternalPackageUri());
+        assertEquals("Категории", "", entryProperties.getCategories());
+        assertEquals("Права", "", entryProperties.getCopyright());
+        assertEquals("Тип пакета", "", entryProperties.getPackageType());
+        assertArrayEquals("Теги пакета", new String[]{"Unit test"}, entryProperties.getTags().toArray());
+        assertEquals("Это последняя версия", true, entryProperties.getIsLatestVersion());
+        assertEquals("Общее описание", "", entryProperties.getSummary());
+    }
+}
