@@ -43,6 +43,20 @@ public class MavenStylePackageSource implements PackageSource {
     }
 
     /**
+     * @return имя каталога, в котором находится хранилище пакетов
+     */
+    public String getRootFolderName() {
+        return rootFolder == null ? null : rootFolder.getAbsolutePath();
+    }
+
+    /**
+     * @param folderName имя каталога, в котором находится хранилище пакетов
+     */
+    public void setRootFolderName(String folderName) {
+        rootFolder = new File(folderName);
+    }
+
+    /**
      * @param rootFolder папка с пакетами
      */
     public MavenStylePackageSource(File rootFolder) {
@@ -163,7 +177,8 @@ public class MavenStylePackageSource implements PackageSource {
     }
 
     /**
-     * Проверяет наличие папки для хранения пакета, создает ее в случае необходимости
+     * Проверяет наличие папки для хранения пакета, создает ее в случае
+     * необходимости
      *
      * @param rootFolder Корневая папка хранилища
      * @param source Файл спецификации
