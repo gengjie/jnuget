@@ -1,14 +1,18 @@
-package ru.aristar.jnuget.files;
+package ru.aristar.jnuget.files.nuspec;
 
+import ru.aristar.jnuget.files.nuspec.Dependency;
+import ru.aristar.jnuget.files.nuspec.NuspecFile;
 import java.io.InputStream;
 import java.util.EnumSet;
 import java.util.List;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import ru.aristar.jnuget.Reference;
 import ru.aristar.jnuget.Version;
+import ru.aristar.jnuget.files.Framework;
+import ru.aristar.jnuget.files.NugetFormatException;
+import ru.aristar.jnuget.files.VersionRange;
 import ru.aristar.jnuget.rss.PackageEntry;
 
 /**
@@ -158,7 +162,7 @@ public class NuspecFileTest {
      * @throws Exception ошибка в процессе теста
      */
     @Test
-    public void testCreateFromPAckageEntry() throws Exception {
+    public void testCreateFromPackageEntry() throws Exception {
         //GIVEN
         InputStream inputStream = NuspecFileTest.class.getResourceAsStream("/rss/entry/Moq.xml");
         PackageEntry entry = PackageEntry.parse(inputStream);
@@ -204,9 +208,10 @@ public class NuspecFileTest {
     }
 
     /**
-     * Анализ файла, содржащего
+     * Анализ файла, содржащего зависимости от встроеных ы фреймворк сборок
      *
-     * @throws NugetFormatException
+     * @throws NugetFormatException тестовый XML не соответствует спецификации
+     * NuGet
      */
     @Test
     public void testParseWithFrameworkAssemblies() throws NugetFormatException {
@@ -218,17 +223,39 @@ public class NuspecFileTest {
         assertThat(result.getFrameworkAssembly().size(), is(equalTo(5)));
         assertThat(result.getFrameworkAssembly().get(0).getAssemblyName(), is(equalTo("PresentationCore")));
         assertThat(result.getFrameworkAssembly().get(0).getTargetFrameworks(), is(equalTo(EnumSet.of(Framework.net35, Framework.net40))));
-
+        
         assertThat(result.getFrameworkAssembly().get(1).getAssemblyName(), is(equalTo("PresentationFramework")));
         assertThat(result.getFrameworkAssembly().get(1).getTargetFrameworks(), is(equalTo(EnumSet.of(Framework.net35, Framework.net40))));
-
+        
         assertThat(result.getFrameworkAssembly().get(2).getAssemblyName(), is(equalTo("WindowsBase")));
         assertThat(result.getFrameworkAssembly().get(2).getTargetFrameworks(), is(equalTo(EnumSet.of(Framework.net35, Framework.net40))));
-
+        
         assertThat(result.getFrameworkAssembly().get(3).getAssemblyName(), is(equalTo("System")));
         assertThat(result.getFrameworkAssembly().get(3).getTargetFrameworks(), is(equalTo(EnumSet.of(Framework.net35, Framework.net40))));
-
+        
         assertThat(result.getFrameworkAssembly().get(4).getAssemblyName(), is(equalTo("System.Xaml")));
         assertThat(result.getFrameworkAssembly().get(4).getTargetFrameworks(), is(equalTo(EnumSet.of(Framework.net40))));
+    }
+
+    /**
+     * Анализ XML содержащего груповые зависимости (с версии NuGet 2.0)
+     *
+     * @throws NugetFormatException тестовый XML не соответствует спецификации
+     * NuGet
+     */
+    @Test
+    public void testParseWithGroupDependencies() throws NugetFormatException {
+        //GIVEN
+        InputStream inputStream = NuspecFileTest.class.getResourceAsStream("/nuspec/group.dependencies.nuspec.xml");
+        //WHEN
+        NuspecFile result = NuspecFile.Parse(inputStream);
+        //THEN
+        assertThat(result, is(not(nullValue())));
+        assertThat(result.getDependencies(), is(not(nullValue())));
+        assertThat(result.getDependencies().size(), is(equalTo(3)));
+        assertThat(result.getDependenciesGroups().size(), is(equalTo(3)));
+        assertThat(result.getDependenciesGroups().get(0).getTargetFramework(), is(nullValue()));
+        assertThat(result.getDependenciesGroups().get(1).getTargetFramework(), is(equalTo(Framework.net40)));
+        assertThat(result.getDependenciesGroups().get(2).getTargetFramework(), is(equalTo(Framework.sl30)));
     }
 }

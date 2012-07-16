@@ -1,4 +1,4 @@
-package ru.aristar.jnuget.files;
+package ru.aristar.jnuget.files.nuspec;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,6 +19,9 @@ import ru.aristar.jnuget.Reference;
 import ru.aristar.jnuget.StringListTypeAdapter;
 import ru.aristar.jnuget.Version;
 import ru.aristar.jnuget.VersionTypeAdapter;
+import ru.aristar.jnuget.files.FrameworkAssembly;
+import ru.aristar.jnuget.files.NugetFormatException;
+import ru.aristar.jnuget.files.NugetNamespaceFilter;
 import ru.aristar.jnuget.rss.EntryProperties;
 import ru.aristar.jnuget.rss.PackageEntry;
 
@@ -138,9 +141,8 @@ public class NuspecFile implements Serializable {
         /**
          * Список зависимостей
          */
-        @XmlElementWrapper(name = "dependencies", namespace = NUSPEC_XML_NAMESPACE_2011)
-        @XmlElement(name = "dependency", namespace = NUSPEC_XML_NAMESPACE_2011)
-        private List<Dependency> dependencies;
+        @XmlElement(name = "dependencies", namespace = NUSPEC_XML_NAMESPACE_2011)
+        private Dependencies dependencies;
     }
     /**
      * Метаданные пакета
@@ -280,13 +282,21 @@ public class NuspecFile implements Serializable {
     }
 
     /**
-     * @return Список зависимостей
+     * @return зависимости пакетов, включая те, что в группах
      */
     public List<Dependency> getDependencies() {
         if (metadata.dependencies == null) {
             return new ArrayList<>();
         }
-        return metadata.dependencies;
+        return metadata.dependencies.getDependencies();
+    }
+
+    /**
+     *
+     * @return группы зависимостей, включая корневую
+     */
+    public List<DependenciesGroup> getDependenciesGroups() {
+        return metadata.dependencies.getGroups();
     }
 
     /**
@@ -363,12 +373,13 @@ public class NuspecFile implements Serializable {
                     + " быть указаны: " + entry.getTitle() + ':' + properties.getVersion());
         }
         metadata = new Metadata();
+        metadata.dependencies = new Dependencies();
         metadata.id = entry.getTitle();
         metadata.version = properties.getVersion();
         metadata.tags = properties.getTags();
         metadata.summary = properties.getSummary();
         metadata.copyright = properties.getCopyright();
-        metadata.dependencies = properties.getDependenciesList();
+        metadata.dependencies.dependencies = properties.getDependenciesList();
         metadata.description = properties.getDescription();
         metadata.requireLicenseAcceptance = properties.getRequireLicenseAcceptance();
     }

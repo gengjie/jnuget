@@ -13,7 +13,12 @@ import java.util.List;
 import java.util.Objects;
 import javax.xml.bind.JAXBException;
 import ru.aristar.jnuget.Version;
-import ru.aristar.jnuget.files.*;
+import ru.aristar.jnuget.files.MavenNupkg;
+import ru.aristar.jnuget.files.NugetFormatException;
+import ru.aristar.jnuget.files.Nupkg;
+import ru.aristar.jnuget.files.TempNupkgFile;
+import ru.aristar.jnuget.files.nuspec.NuspecFile;
+import ru.aristar.jnuget.ui.descriptors.Property;
 
 /**
  * Хранилище пакетов, имитирующее структуру хранилища Maven.
@@ -36,6 +41,7 @@ public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> i
     /**
      * @return имя каталога, в котором находится хранилище пакетов
      */
+    @Property
     public String getRootFolderName() {
         return rootFolder == null ? null : rootFolder.getAbsolutePath();
     }

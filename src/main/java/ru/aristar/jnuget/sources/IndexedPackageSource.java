@@ -33,6 +33,14 @@ public class IndexedPackageSource implements PackageSource<Nupkg> {
      * Логгер
      */
     protected Logger logger = LoggerFactory.getLogger(this.getClass());
+    /**
+     * Таймер обновления индекса
+     */
+    private Timer timer;
+    /**
+     * Интервал обновления индекса храниилща
+     */
+    private Integer refreshInterval;
 
     @Override
     public void refreshPackage(Nupkg nupkg) {
@@ -196,16 +204,30 @@ public class IndexedPackageSource implements PackageSource<Nupkg> {
     /**
      * Устанавливает интервал обновления информации о хранилище
      *
-     * @param refreshInterval интервал обновления информации в минутах
+     * @param interval интервал обновления информации в минутах
      */
-    public void setRefreshInterval(Integer refreshInterval) {
+    public void setRefreshInterval(Integer interval) {
+        this.refreshInterval = interval;
+        if (timer != null) {
+            timer.cancel();
+            timer.purge();
+        }
         if (refreshInterval == null) {
             return;
         }
         final long intervalMs = refreshInterval * 60000;
         RefreshIndexThread indexThread = new IndexedPackageSource.RefreshIndexThread();
-        Timer timer = new Timer();
+        if (timer == null) {
+            timer = new Timer();
+        }
         timer.schedule(indexThread, intervalMs, intervalMs);
+    }
+
+    /**
+     * @return интервал обновления индекса хранилища
+     */
+    public Integer getRefreshInterval() {
+        return refreshInterval;
     }
 
     /**
@@ -234,5 +256,23 @@ public class IndexedPackageSource implements PackageSource<Nupkg> {
             logger.info("Локально сохраненный файл индекса для хранилища {} не "
                     + "обнаружен", new Object[]{packageSource});
         }
+    }
+
+    /**
+     * @return файл для хранения индекса
+     */
+    public File getIndexStoreFile() {
+        return indexStoreFile;
+    }
+
+    /**
+     * Создает файл для хранения индекса
+     *
+     * @param path путь к каталогу, в котором требуется создать файл
+     * @param storageName имя хранилища
+     * @return файл для хранения индекса
+     */
+    public static File getIndexSaveFile(File path, String storageName) {
+        return new File(path, storageName + ".idx");
     }
 }
