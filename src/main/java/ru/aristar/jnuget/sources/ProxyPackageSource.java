@@ -8,7 +8,7 @@ import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.aristar.jnuget.Version;
-import ru.aristar.jnuget.files.MavenNupkg;
+import ru.aristar.jnuget.files.MavenStyleNupkg;
 import ru.aristar.jnuget.files.Nupkg;
 import ru.aristar.jnuget.files.ProxyNupkg;
 import ru.aristar.jnuget.files.RemoteNupkg;
@@ -133,8 +133,8 @@ public class ProxyPackageSource implements PackageSource<Nupkg> {
     }
 
     @Override
-    public MavenNupkg getPackage(String id, Version version) {
-        MavenNupkg nupkg = hostedSource.getPackage(id, version);
+    public MavenStyleNupkg getPackage(String id, Version version) {
+        MavenStyleNupkg nupkg = hostedSource.getPackage(id, version);
         if (nupkg == null) {
             try {
                 logger.debug("Получение файла пакета {}:{} из удаленного хранилища", new Object[]{id, version});

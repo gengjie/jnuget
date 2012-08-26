@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.xml.bind.JAXBException;
 import ru.aristar.jnuget.Version;
-import ru.aristar.jnuget.files.MavenNupkg;
+import ru.aristar.jnuget.files.MavenStyleNupkg;
 import ru.aristar.jnuget.files.NugetFormatException;
 import ru.aristar.jnuget.files.Nupkg;
 import ru.aristar.jnuget.files.TempNupkgFile;
@@ -25,7 +25,7 @@ import ru.aristar.jnuget.ui.descriptors.Property;
  *
  * @author unlocker
  */
-public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> implements PackageSource<MavenNupkg> {
+public class MavenStylePackageSource extends AbstractPackageSource<MavenStyleNupkg> implements PackageSource<MavenStyleNupkg> {
 
     /**
      * Корневая папка, в которой расположены пакеты
@@ -65,8 +65,8 @@ public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> i
     }
 
     @Override
-    public Collection<MavenNupkg> getPackages() {
-        List<MavenNupkg> list = new ArrayList<>();
+    public Collection<MavenStyleNupkg> getPackages() {
+        List<MavenStyleNupkg> list = new ArrayList<>();
         for (String id : rootFolder.list()) {
             list.addAll(getPackagesById(id));
         }
@@ -74,10 +74,10 @@ public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> i
     }
 
     @Override
-    public Collection<MavenNupkg> getLastVersionPackages() {
-        List<MavenNupkg> list = new ArrayList<>();
+    public Collection<MavenStyleNupkg> getLastVersionPackages() {
+        List<MavenStyleNupkg> list = new ArrayList<>();
         for (String id : rootFolder.list()) {
-            final MavenNupkg lastVersionPackage = getLastVersionPackage(id);
+            final MavenStyleNupkg lastVersionPackage = getLastVersionPackage(id);
             if (lastVersionPackage != null) {
                 list.add(lastVersionPackage);
             }
@@ -86,17 +86,17 @@ public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> i
     }
 
     @Override
-    public Collection<MavenNupkg> getPackages(String id) {
+    public Collection<MavenStyleNupkg> getPackages(String id) {
         return getPackagesById(id.toLowerCase());
     }
 
     @Override
-    public MavenNupkg getLastVersionPackage(String id) {
+    public MavenStyleNupkg getLastVersionPackage(String id) {
         File idDir = new File(rootFolder, id);
-        MavenNupkg lastVersion = null;
+        MavenStyleNupkg lastVersion = null;
         for (File versionDir : idDir.listFiles()) {
             try {
-                MavenNupkg temp = new MavenNupkg(versionDir);
+                MavenStyleNupkg temp = new MavenStyleNupkg(versionDir);
                 if (lastVersion == null || temp.getVersion().compareTo(lastVersion.getVersion()) > 0) {
                     lastVersion = temp;
                 }
@@ -108,12 +108,12 @@ public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> i
     }
 
     @Override
-    public MavenNupkg getPackage(String id, Version version) {
+    public MavenStyleNupkg getPackage(String id, Version version) {
         File idDir = new File(rootFolder, id.toLowerCase());
         if (idDir.exists()) {
             for (File versionDir : idDir.listFiles()) {
                 try {
-                    MavenNupkg nupkg = new MavenNupkg(versionDir);
+                    MavenStyleNupkg nupkg = new MavenStyleNupkg(versionDir);
                     if (Objects.equals(nupkg.getVersion(), version)) {
                         return nupkg;
                     }
@@ -150,14 +150,14 @@ public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> i
      * @param id идентификатор пакета
      * @return коллекция пакетов
      */
-    private Collection<MavenNupkg> getPackagesById(String id) {
+    private Collection<MavenStyleNupkg> getPackagesById(String id) {
         File idDir = new File(rootFolder, id);
 
-        List<MavenNupkg> list = new ArrayList<>();
+        List<MavenStyleNupkg> list = new ArrayList<>();
         if (idDir.exists()) {
             for (File versionDir : idDir.listFiles()) {
                 try {
-                    list.add(new MavenNupkg(versionDir));
+                    list.add(new MavenStyleNupkg(versionDir));
                 } catch (NugetFormatException ex) {
                     logger.error("Не удалось считать информацию о пакете.", ex);
                 }
@@ -215,13 +215,13 @@ public class MavenStylePackageSource extends AbstractPackageSource<MavenNupkg> i
             }
             try {
                 // Сохраняем nuspec
-                File nuspecFile = new File(packageFolder, MavenNupkg.NUSPEC_FILE_NAME);
+                File nuspecFile = new File(packageFolder, MavenStyleNupkg.NUSPEC_FILE_NAME);
                 try (FileOutputStream fileOutputStream = new FileOutputStream(nuspecFile)) {
                     nupkg.getNuspecFile().saveTo(fileOutputStream);
                 }
 
                 // Сохраняем контрольную сумму
-                File hashFile = new File(packageFolder, MavenNupkg.HASH_FILE_NAME);
+                File hashFile = new File(packageFolder, MavenStyleNupkg.HASH_FILE_NAME);
                 nupkg.getHash().saveTo(hashFile);
 
             } catch (JAXBException | NoSuchAlgorithmException ex) {
