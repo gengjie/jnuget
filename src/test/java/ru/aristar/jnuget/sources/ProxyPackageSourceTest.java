@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.aristar.jnuget.Version;
-import ru.aristar.jnuget.files.MavenNupkg;
+import ru.aristar.jnuget.files.MavenStyleNupkg;
 import ru.aristar.jnuget.files.Nupkg;
 import ru.aristar.jnuget.files.RemoteNupkg;
 import ru.aristar.jnuget.files.TempNupkgFile;
@@ -65,11 +65,11 @@ public class ProxyPackageSourceTest {
                 FileChannel targetChannel = new FileOutputStream(targetFile).getChannel()) {
             TempNupkgFile.fastChannelCopy(sourceChannel, targetChannel);
         }
-        File hashfile = new File(versionFolder, MavenNupkg.HASH_FILE_NAME);
+        File hashfile = new File(versionFolder, MavenStyleNupkg.HASH_FILE_NAME);
         try (FileWriter fileWriter = new FileWriter(hashfile)) {
             fileWriter.write("kDPZtMu1BOZerHZvsbPnj7DfOdEyn/j4fanlv7BWuuVOZ0+VwuuxWzUnpD7jo7pkLjFOqIs41Vkk7abFZjPRJA==");
         }
-        File nuspecFile = new File(versionFolder, MavenNupkg.NUSPEC_FILE_NAME);
+        File nuspecFile = new File(versionFolder, MavenStyleNupkg.NUSPEC_FILE_NAME);
         try (ReadableByteChannel sourceChannel = Channels.newChannel(MavenStylePackageSourceTest.class.getResourceAsStream("/nuspec/NUnit.nuspec.xml"));
                 FileChannel targetChannel = new FileOutputStream(nuspecFile).getChannel()) {
             TempNupkgFile.fastChannelCopy(sourceChannel, targetChannel);
@@ -160,7 +160,7 @@ public class ProxyPackageSourceTest {
             packageSource.setFolderName(testFolder.getAbsolutePath());
             packageSource.remoteSource = remotePackageSource;
             //WHEN
-            MavenNupkg result = packageSource.getPackage("NUnit", Version.parse("2.5.9.10348"));
+            MavenStyleNupkg result = packageSource.getPackage("NUnit", Version.parse("2.5.9.10348"));
             //THEN
             assertTrue("Создан каталог в хранилище", new File(testFolder, "NUnit".toLowerCase()).exists());
             assertEquals("Идентификатор пакета", "NUnit", result.getId());

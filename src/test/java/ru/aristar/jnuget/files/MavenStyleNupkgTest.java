@@ -15,7 +15,7 @@ import ru.aristar.jnuget.Version;
  *
  * @author sviridov
  */
-public class MavenNupkgTest {
+public class MavenStyleNupkgTest {
 
     /**
      * Тестовая папка с пакетами
@@ -67,17 +67,17 @@ public class MavenNupkgTest {
         try (FileChannel nupkgChannel = new FileOutputStream(targetFile).getChannel()) {
             TempNupkgFile.fastChannelCopy(Channels.newChannel(inputStream), nupkgChannel);
         }
-        File hashFile = new File(versionFolder, MavenNupkg.HASH_FILE_NAME);
+        File hashFile = new File(versionFolder, MavenStyleNupkg.HASH_FILE_NAME);
         try (FileWriter fileWriter = new FileWriter(hashFile)) {
             fileWriter.write("kDPZtMu1BOZerHZvsbPnj7DfOdEyn/j4fanlv7BWuuVOZ0+VwuuxWzUnpD7jo7pkLjFOqIs41Vkk7abFZjPRJA==");
         }
-        File nuspecFile = new File(versionFolder, MavenNupkg.NUSPEC_FILE_NAME);
+        File nuspecFile = new File(versionFolder, MavenStyleNupkg.NUSPEC_FILE_NAME);
         InputStream nuspecStream = this.getClass().getResourceAsStream("/nuspec/NUnit.nuspec.xml");
         try (FileChannel nuspecChannel = new FileOutputStream(nuspecFile).getChannel()) {
             TempNupkgFile.fastChannelCopy(Channels.newChannel(nuspecStream), nuspecChannel);
         }
         //WHEN
-        MavenNupkg mavenNupkg = new MavenNupkg(versionFolder);
+        MavenStyleNupkg mavenNupkg = new MavenStyleNupkg(versionFolder);
         //THEN
         assertEquals("Идентификатор пакета", "NUnit", mavenNupkg.getId());
         assertEquals("Версия пакета", Version.parse("2.5.9.10348"), mavenNupkg.getVersion());
@@ -97,7 +97,7 @@ public class MavenNupkgTest {
         FileOutputStream fileOutputStream = new FileOutputStream(packageFile);
         fileOutputStream.write(new byte[]{1, 1, 1});
         //WHEN
-        MavenNupkg result = new MavenNupkg(packageFile);
+        MavenStyleNupkg result = new MavenStyleNupkg(packageFile);
         System.out.println(result);
     }
 
@@ -114,7 +114,7 @@ public class MavenNupkgTest {
         File versionFolder = new File(idFolder, "2.5.9.10348/");
         versionFolder.mkdirs();
         //WHEN
-        MavenNupkg result = new MavenNupkg(versionFolder);
+        MavenStyleNupkg result = new MavenStyleNupkg(versionFolder);
         System.out.println(result);
     }
     //THEN
@@ -136,7 +136,7 @@ public class MavenNupkgTest {
             TempNupkgFile.fastChannelCopy(Channels.newChannel(inputStream), nupkgChannel);
         }
         //WHEN
-        MavenNupkg result = new MavenNupkg(versionFolder);
+        MavenStyleNupkg result = new MavenStyleNupkg(versionFolder);
         System.out.println(result);
     }
 
@@ -156,12 +156,12 @@ public class MavenNupkgTest {
         try (FileChannel nupkgChannel = new FileOutputStream(targetFile).getChannel()) {
             TempNupkgFile.fastChannelCopy(Channels.newChannel(inputStream), nupkgChannel);
         }
-        File hashFile = new File(versionFolder, MavenNupkg.HASH_FILE_NAME);
+        File hashFile = new File(versionFolder, MavenStyleNupkg.HASH_FILE_NAME);
         try (FileWriter fileWriter = new FileWriter(hashFile)) {
             fileWriter.write("kDPZtMu1BOZerHZvsbPnj7DfOdEyn/j4fanlv7BWuuVOZ0+VwuuxWzUnpD7jo7pkLjFOqIs41Vkk7abFZjPRJA==");
         }
         //WHEN
-        MavenNupkg result = new MavenNupkg(versionFolder);
+        MavenStyleNupkg result = new MavenStyleNupkg(versionFolder);
         System.out.println(result);
     }
 }

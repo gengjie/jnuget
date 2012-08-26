@@ -9,10 +9,11 @@ import ru.aristar.jnuget.Version;
 import ru.aristar.jnuget.files.nuspec.NuspecFile;
 
 /**
+ * Пакет из хранилища с Maven-подобной структурой.
  *
  * @author Unlocker
  */
-public class MavenNupkg extends ClassicNupkg implements Nupkg {
+public class MavenStyleNupkg extends ClassicNupkg implements Nupkg {
 
     /**
      * Название файла с контрольной суммой
@@ -31,7 +32,7 @@ public class MavenNupkg extends ClassicNupkg implements Nupkg {
      * @param packageFolder папка с файлами пакета
      * @throws NugetFormatException некорректный формат папки
      */
-    public MavenNupkg(File packageFolder) throws NugetFormatException {
+    public MavenStyleNupkg(File packageFolder) throws NugetFormatException {
         if (!packageFolder.isDirectory()) {
             throw new NugetFormatException(String.format("По указанному пути '%s' располагается не папка.", packageFolder.getAbsolutePath()));
         }
@@ -46,8 +47,8 @@ public class MavenNupkg extends ClassicNupkg implements Nupkg {
         }
         this.packageFolder = packageFolder;
         this.version = Version.parse(packageFolder.getName());
-        this.id = MavenNupkg.this.getNuspecFile().getId();
-        this.file = new File(packageFolder, MavenNupkg.this.getFileName());
+        this.id = MavenStyleNupkg.this.getNuspecFile().getId();
+        this.file = new File(packageFolder, MavenStyleNupkg.this.getFileName());
     }
 
     @Override

@@ -16,7 +16,7 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.aristar.jnuget.Version;
-import ru.aristar.jnuget.files.MavenNupkg;
+import ru.aristar.jnuget.files.MavenStyleNupkg;
 import ru.aristar.jnuget.files.Nupkg;
 import ru.aristar.jnuget.files.TempNupkgFile;
 import ru.aristar.jnuget.files.nuspec.NuspecFile;
@@ -65,11 +65,11 @@ public class MavenStylePackageSourceTest {
                 FileChannel targetChannel = new FileOutputStream(targetFile).getChannel()) {
             TempNupkgFile.fastChannelCopy(sourceChannel, targetChannel);
         }
-        File hashfile = new File(versionFolder, MavenNupkg.HASH_FILE_NAME);
+        File hashfile = new File(versionFolder, MavenStyleNupkg.HASH_FILE_NAME);
         try (FileWriter fileWriter = new FileWriter(hashfile)) {
             fileWriter.write("kDPZtMu1BOZerHZvsbPnj7DfOdEyn/j4fanlv7BWuuVOZ0+VwuuxWzUnpD7jo7pkLjFOqIs41Vkk7abFZjPRJA==");
         }
-        File nuspecFile = new File(versionFolder, MavenNupkg.NUSPEC_FILE_NAME);
+        File nuspecFile = new File(versionFolder, MavenStyleNupkg.NUSPEC_FILE_NAME);
         try (ReadableByteChannel sourceChannel = Channels.newChannel(MavenStylePackageSourceTest.class.getResourceAsStream("/nuspec/NUnit.nuspec.xml"));
                 FileChannel targetChannel = new FileOutputStream(nuspecFile).getChannel()) {
             TempNupkgFile.fastChannelCopy(sourceChannel, targetChannel);
@@ -99,7 +99,7 @@ public class MavenStylePackageSourceTest {
         //GIVEN
         MavenStylePackageSource packageSource = new MavenStylePackageSource(testFolder);
         //WHEN
-        Collection<MavenNupkg> result = packageSource.getPackages("NUnit");
+        Collection<MavenStyleNupkg> result = packageSource.getPackages("NUnit");
         //THEN
         assertNotNull("Коллекция пакетов", result);
         assertEquals("Пакетов в коллекции", 1, result.size());
@@ -122,7 +122,7 @@ public class MavenStylePackageSourceTest {
         //GIVEN
         MavenStylePackageSource packageSource = new MavenStylePackageSource(testFolder);
         //WHEN
-        Collection<MavenNupkg> result = packageSource.getPackages("NO_PACKAGE_IN_STORAGE");
+        Collection<MavenStyleNupkg> result = packageSource.getPackages("NO_PACKAGE_IN_STORAGE");
         //THEN
         assertNotNull("Коллекция пакетов", result);
         assertTrue("Коллекция пуста", result.isEmpty());
@@ -141,7 +141,7 @@ public class MavenStylePackageSourceTest {
         File noversionIdFolder = new File(testFolder, "NO_VERSION_IN_STORAGE");
         noversionIdFolder.mkdirs();
         //WHEN
-        Collection<MavenNupkg> result = packageSource.getPackages("NO_VERSION_IN_STORAGE");
+        Collection<MavenStyleNupkg> result = packageSource.getPackages("NO_VERSION_IN_STORAGE");
         //THEN
         assertNotNull("Коллекция пакетов", result);
         assertTrue("Коллекция пуста", result.isEmpty());
@@ -157,7 +157,7 @@ public class MavenStylePackageSourceTest {
         //GIVEN
         MavenStylePackageSource packageSource = new MavenStylePackageSource(testFolder);
         //WHEN
-        Collection<MavenNupkg> nupkgs = packageSource.getPackages("NUnit");
+        Collection<MavenStyleNupkg> nupkgs = packageSource.getPackages("NUnit");
         //THEN
         assertThat("Пакет найден", nupkgs.size(), equalTo(1));
         NuspecFile result = nupkgs.iterator().next().getNuspecFile();
@@ -185,7 +185,7 @@ public class MavenStylePackageSourceTest {
         mavenStylePackageSource.setPushStrategy(new ModifyStrategy(true));
         mavenStylePackageSource.pushPackage(tempNupkgFile);
         //WHEN
-        MavenNupkg result = mavenStylePackageSource.getPackage(tempNupkgFile.getId(), tempNupkgFile.getVersion());
+        MavenStyleNupkg result = mavenStylePackageSource.getPackage(tempNupkgFile.getId(), tempNupkgFile.getVersion());
         //THEN
         assertEquals("Идентификатор пакета", tempNupkgFile.getId(), result.getId());
         assertEquals("Версия пакета", tempNupkgFile.getVersion(), result.getVersion());
@@ -210,9 +210,9 @@ public class MavenStylePackageSourceTest {
         //WHEN
         mavenStylePackageSource.pushPackage(tempNupkgFile);
         File versionFolder = new File(packageFolder, "2.5.9.10348");
-        File hashFile = new File(versionFolder, MavenNupkg.HASH_FILE_NAME);
+        File hashFile = new File(versionFolder, MavenStyleNupkg.HASH_FILE_NAME);
         File packageFile = new File(versionFolder, "NUnit.2.5.9.10348.nupkg");
-        File nuspecFile = new File(versionFolder, MavenNupkg.NUSPEC_FILE_NAME);
+        File nuspecFile = new File(versionFolder, MavenStyleNupkg.NUSPEC_FILE_NAME);
         //THEN
         assertTrue("Файл пакета создан", packageFile.exists());
         assertTrue("Файл спецификации создан", nuspecFile.exists());
