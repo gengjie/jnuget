@@ -1,6 +1,7 @@
 package ru.aristar.jnuget;
 
 import com.sun.jersey.multipart.FormDataParam;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import javax.security.auth.login.LoginException;
@@ -68,10 +69,11 @@ public class MainUrlResource {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     @Path("nuget/{metadata : [$]metadata}")
-    public Response getMetadata() {
-        InputStream inputStream = this.getClass().getResourceAsStream("/metadata.xml");
-        ResponseBuilder response = Response.ok((Object) inputStream);
-        return response.build();
+    public Response getMetadata() throws IOException {
+        try (InputStream inputStream = MainUrlResource.class.getResourceAsStream("/metadata.xml")) {
+            ResponseBuilder response = Response.ok((Object) inputStream);
+            return response.build();
+        }
     }
 
     /**
@@ -93,7 +95,7 @@ public class MainUrlResource {
     public Response getPackages(@QueryParam("$filter") String filter,
             @QueryParam("$orderby") @DefaultValue("updated") String orderBy,
             @QueryParam("$skip") @DefaultValue("0") int skip,
-            @QueryParam("$top") @DefaultValue("30") int top,
+            @QueryParam("$top") @DefaultValue("-1") int top,
             @QueryParam("searchTerm") String searchTerm,
             @QueryParam("targetFramework") String targetFramework) {
         try {

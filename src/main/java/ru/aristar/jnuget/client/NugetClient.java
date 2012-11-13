@@ -1,12 +1,16 @@
 package ru.aristar.jnuget.client;
 
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.GZIPContentEncodingFilter;
+import com.sun.jersey.client.apache4.ApacheHttpClient4;
+import com.sun.jersey.client.apache4.config.ApacheHttpClient4Config;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -19,10 +23,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.aristar.jnuget.MainUrlResource;
 import ru.aristar.jnuget.Version;
+import ru.aristar.jnuget.common.ProxyOptions;
 import ru.aristar.jnuget.files.NugetFormatException;
 import ru.aristar.jnuget.files.Nupkg;
 import ru.aristar.jnuget.files.TempNupkgFile;
 import ru.aristar.jnuget.rss.PackageFeed;
+import ru.aristar.jnuget.sources.PackageSourceFactory;
 
 /**
  *
@@ -55,11 +61,20 @@ public class NugetClient implements AutoCloseable {
      * Конструктор по умолчанию
      */
     public NugetClient() {
-        ClientConfig config = new DefaultClientConfig();
-        client = Client.create(config);
+        final ProxyOptions proxyOptions = PackageSourceFactory.getInstance().getOptions().getProxyOptions();
+        ClientConfig config = createClientConfig(proxyOptions);
+        client = ApacheHttpClient4.create(config);
         client.setFollowRedirects(Boolean.TRUE);
         client.addFilter(new GZIPContentEncodingFilter());
         webResource = client.resource(DEFAULT_REMOTE_STORAGE_URL);
+    }
+
+    /**
+     * @param url URL ресурса, к которому необходимо подключиться
+     */
+    public NugetClient(String url) {
+        this();
+        NugetClient.this.setUrl(url);
     }
 
     /**
@@ -149,9 +164,10 @@ public class NugetClient implements AutoCloseable {
     public TempNupkgFile getPackage(String id, Version version) throws IOException, URISyntaxException, NugetFormatException {
         URI uri = webResource.getURI();
         final String path = format("download/{0}/{1}", new Object[]{id, version.toString()});
-        InputStream inputStream = get(client, uri, path, InputStream.class);
-        TempNupkgFile nupkgFile = new TempNupkgFile(inputStream);
-        return nupkgFile;
+        try (InputStream inputStream = get(client, uri, path, InputStream.class)) {
+            TempNupkgFile nupkgFile = new TempNupkgFile(inputStream);
+            return nupkgFile;
+        }
     }
 
     /**
@@ -209,47 +225,64 @@ public class NugetClient implements AutoCloseable {
      * @throws IOException ошибка чтения из сокета
      * @throws URISyntaxException URI имеет некорректный синтаксис
      */
-    public static <T> T get(Client client, URI uri, String path,
+    private <T> T get(Client client, URI uri, String path,
             Map<String, String> querryParams, MediaType[] accept, Class<T> targetClass)
             throws IOException, URISyntaxException {
-        WebResource webResource = client.resource(uri);
+        WebResource currentResource = client.resource(uri);
         //Относительный путь
         if (path != null) {
-            webResource = webResource.path(path);
+            currentResource = currentResource.path(path);
         }
         //Параметры запроса
         if (querryParams != null) {
             for (Map.Entry<String, String> entry : querryParams.entrySet()) {
                 if (entry.getValue() != null) {
-                    webResource = webResource.queryParam(entry.getKey(), entry.getValue());
+                    currentResource = currentResource.queryParam(entry.getKey(), entry.getValue());
                 }
             }
         }
-        ClientResponse response;
-        //Заголовки запроса
-        if (accept != null && accept.length != 0) {
-            response = webResource.accept(accept).get(ClientResponse.class);
-        } else {
-            response = webResource.get(ClientResponse.class);
-        }
-        switch (response.getClientResponseStatus()) {
-            case ACCEPTED:
-            case OK: {
-                return response.getEntity(targetClass);
+        try {
+            ClientResponse response;
+            //Заголовки запроса
+            if (accept != null && accept.length != 0) {
+                response = currentResource.accept(accept).get(ClientResponse.class);
+            } else {
+                response = currentResource.get(ClientResponse.class);
             }
-            case FOUND:
-            case MOVED_PERMANENTLY: {
-                String redirectUriString = response.getHeaders().get("Location").get(0);
-                URI redirectUri = new URI(redirectUriString);
-                return get(client, redirectUri, null, querryParams, accept, targetClass);
+            switch (response.getClientResponseStatus()) {
+                case ACCEPTED:
+                case OK: {
+                    logger.trace("Получен ответ для типа {}", new Object[]{targetClass.getName()});
+                    final T result = response.getEntity(targetClass);
+                    if (!Closeable.class.isAssignableFrom(targetClass)) {
+                        logger.trace("Принудительное закрытие потока от сервера.");
+                        response.getEntityInputStream().close();
+                    }
+                    return result;
+                }
+                case FOUND:
+                case MOVED_PERMANENTLY: {
+                    String redirectUriString = response.getHeaders().get("Location").get(0);
+                    URI redirectUri = new URI(redirectUriString);
+                    response.getEntityInputStream().close();
+                    return get(client, redirectUri, null, querryParams, accept, targetClass);
+                }
+                case BAD_REQUEST: {
+                    response.getEntityInputStream().close();
+                    return get(client, uri, null, querryParams, accept, targetClass);
+                }
+                case INTERNAL_SERVER_ERROR: {
+                    response.getEntityInputStream().close();
+                    throw new IOException("Ошибка на удаленном сервере код: "
+                            + response.getClientResponseStatus().getStatusCode() + " "
+                            + response.getClientResponseStatus().getReasonPhrase());
+                }
+                default:
+                    throw new IOException("Статус сообщения " + response.getClientResponseStatus() + " не поддерживается");
             }
-            case INTERNAL_SERVER_ERROR: {
-                throw new IOException("Ошибка на удаленном сервере код: "
-                        + response.getClientResponseStatus().getStatusCode() + " "
-                        + response.getClientResponseStatus().getReasonPhrase());
-            }
-            default:
-                throw new IOException("Статус сообщения " + response.getClientResponseStatus() + " не поддерживается");
+        } catch (ClientHandlerException e) {
+            logger.warn(format("Ошибка получения данных с удаленного сервера по адресу {0}", currentResource.getURI()), e);
+            throw e;
         }
     }
 
@@ -260,46 +293,56 @@ public class NugetClient implements AutoCloseable {
      * @param client клиент
      * @param uri URI ресурса
      * @param targetClass класс, который необходимо получить
-     * @param querryParams параметры запроса
      * @param path относительный путь к объекту
      * @return объект из удаленного URI
      * @throws IOException ошибка чтения из сокета
      * @throws URISyntaxException URI имеет некорректный синтаксис
      */
-    public static <T> T get(Client client, URI uri, String path, Map<String, String> querryParams, Class<T> targetClass)
-            throws IOException, URISyntaxException {
-        return get(client, uri, path, querryParams, null, targetClass);
-    }
-
-    /**
-     * Получить класс указанного типа с URI
-     *
-     * @param <T> тип
-     * @param client клиент
-     * @param uri URI ресурса
-     * @param targetClass класс, который необходимо получить
-     * @param path относительный путь к объекту
-     * @return объект из удаленного URI
-     * @throws IOException ошибка чтения из сокета
-     * @throws URISyntaxException URI имеет некорректный синтаксис
-     */
-    public static <T> T get(Client client, URI uri, String path, Class<T> targetClass)
+    private <T> T get(Client client, URI uri, String path, Class<T> targetClass)
             throws IOException, URISyntaxException {
         return get(client, uri, path, null, null, targetClass);
     }
 
     /**
+     * Создает настройки подключения к серверу NuGet
+     *
+     * @param proxyOptions настройки прокси
+     * @return
+     */
+    private ClientConfig createClientConfig(ProxyOptions proxyOptions) {
+        ClientConfig config = new DefaultClientConfig();
+        if (proxyOptions.getUseSystemProxy() != null && proxyOptions.getUseSystemProxy()) {
+            logger.info("Используется системный прокси");
+            System.setProperty("java.net.useSystemProxies", "true");
+        } else if (proxyOptions.getNoProxy() != null && proxyOptions.getNoProxy()) {
+            logger.info("Прокси отключен");
+            throw new UnsupportedOperationException("Отключение прокси не реализовано");
+        } else {
+            logger.info("Используется прокси {}:{}",
+                    new Object[]{proxyOptions.getHost(), proxyOptions.getPort()});
+            String host = proxyOptions.getHost();
+            if (!host.toLowerCase().startsWith("http://")) {
+                host = "http://" + host;
+            }
+            URI proxyUri = URI.create(host + ":" + proxyOptions.getPort());
+            config.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_URI, proxyUri);
+            config.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_USERNAME, proxyOptions.getLogin());
+            config.getProperties().put(ApacheHttpClient4Config.PROPERTY_PROXY_PASSWORD, proxyOptions.getPassword());
+        }
+        return config;
+    }
+
+    /**
      * Получить класс указанного типа с URI
      *
      * @param <T> тип
-     * @param client клиент
      * @param uri URI ресурса
      * @param targetClass класс, который необходимо получить
      * @return объект из удаленного URI
      * @throws IOException ошибка чтения из сокета
      * @throws URISyntaxException URI имеет некорректный синтаксис
      */
-    public static <T> T get(Client client, URI uri, Class<T> targetClass)
+    public <T> T get(URI uri, Class<T> targetClass)
             throws IOException, URISyntaxException {
         return get(client, uri, null, null, null, targetClass);
     }

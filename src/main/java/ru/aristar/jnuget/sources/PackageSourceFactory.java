@@ -4,23 +4,17 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.Authenticator;
-import java.net.ProxySelector;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import javax.activation.UnsupportedDataTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.aristar.jnuget.common.CustomProxyAuthenticator;
-import ru.aristar.jnuget.common.CustomProxySelector;
 import ru.aristar.jnuget.common.OptionConverter;
 import ru.aristar.jnuget.common.Options;
-import ru.aristar.jnuget.common.ProxyOptions;
 import ru.aristar.jnuget.common.StorageOptions;
 import ru.aristar.jnuget.common.TriggerOptions;
 import ru.aristar.jnuget.files.Nupkg;
-import ru.aristar.jnuget.sources.push.ModifyStrategy;
 import ru.aristar.jnuget.sources.push.AfterTrigger;
 import ru.aristar.jnuget.sources.push.BeforeTrigger;
 import ru.aristar.jnuget.sources.push.ModifyStrategy;
@@ -63,10 +57,11 @@ public class PackageSourceFactory {
      * @param packageSource хранилище, которое необходимо индексировать
      * @param storageName имя, используемое для сохранения индекса
      * @param refreshInterval интервал обновления информации в индекск
+     * @param cronString строка cron (планирование обновления индекса)
      * @return индексируемое хранилище
      */
     protected PackageSource<Nupkg> createIndexForStorage(PackageSource<Nupkg> packageSource,
-            String storageName, Integer refreshInterval) {
+            String storageName, Integer refreshInterval, String cronString) {
         logger.debug("Создание индекса для хранилища {}", new Object[]{packageSource});
         IndexedPackageSource indexedPackageSource = new IndexedPackageSource();
         indexedPackageSource.setUnderlyingSource(packageSource);
@@ -74,7 +69,11 @@ public class PackageSourceFactory {
             File storageFile = IndexedPackageSource.getIndexSaveFile(Options.getNugetHome(), storageName);
             indexedPackageSource.setIndexStoreFile(storageFile);
         }
-        if (refreshInterval != null) {
+        if (cronString != null) {
+            logger.info("Расписание обновления индекса для хранилища {} установлено в \"{}\"",
+                    new Object[]{packageSource, cronString});
+            indexedPackageSource.setCronSheduller(cronString);
+        } else if (refreshInterval != null) {
             logger.info("Интервал обновления для хранилища {} установлен в {}",
                     new Object[]{packageSource, refreshInterval});
             indexedPackageSource.setRefreshInterval(refreshInterval);
@@ -92,8 +91,7 @@ public class PackageSourceFactory {
         //Создание корневого хранилища
         logger.info("Инициализация файлового хранища");
         RootPackageSource rootPackageSource = new RootPackageSource();
-        ModifyStrategy pushStrategy = null;
-        pushStrategy = new ModifyStrategy(true);
+        ModifyStrategy pushStrategy = new ModifyStrategy(true);
         logger.warn("Для корневого репозитория разрешается публикация "
                 + "пакетов. (поведение по умолчанию)");
         rootPackageSource.setPushStrategy(pushStrategy);
@@ -150,7 +148,11 @@ public class PackageSourceFactory {
         newSource.setPushStrategy(pushStrategy);
         logger.info("Установлена стратегия фиксации");
         if (storageOptions.isIndexed()) {
-            newSource = createIndexForStorage(newSource, storageOptions.getStorageName(), storageOptions.getRefreshInterval());
+            newSource = createIndexForStorage(
+                    newSource,
+                    storageOptions.getStorageName(),
+                    storageOptions.getRefreshInterval(),
+                    storageOptions.getCronString());
         }
         logger.info("Хранилище создано");
         return newSource;
@@ -263,7 +265,6 @@ public class PackageSourceFactory {
         if (reinitialize || packageSource == null) {
             synchronized (this) {
                 if (packageSource == null) {
-                    initializeProxyOptions(options.getProxyOptions());
                     packageSource = createRootPackageSource(options);
                 }
             }
@@ -278,30 +279,6 @@ public class PackageSourceFactory {
      */
     public RootPackageSource getPackageSource() {
         return getPackageSource(false);
-    }
-
-    /**
-     * Инициализация настроек прокси
-     *
-     * @param proxyOptions настройки прокси сервера
-     */
-    private void initializeProxyOptions(ProxyOptions proxyOptions) {
-        if (proxyOptions.getUseSystemProxy() != null && proxyOptions.getUseSystemProxy()) {
-            logger.info("Используется системный прокси");
-            System.setProperty("java.net.useSystemProxies", "true");
-        } else if (proxyOptions.getNoProxy() != null && proxyOptions.getNoProxy()) {
-            logger.info("Прокси отключен");
-            ProxySelector.setDefault(new CustomProxySelector());
-        } else {
-            logger.info("Используется прокси {}:{}",
-                    new Object[]{proxyOptions.getHost(), proxyOptions.getPort()});
-            ProxySelector.setDefault(new CustomProxySelector(
-                    proxyOptions.getHost(),
-                    proxyOptions.getPort()));
-            Authenticator.setDefault(new CustomProxyAuthenticator(
-                    proxyOptions.getLogin(),
-                    proxyOptions.getPassword()));
-        }
     }
 
     /**

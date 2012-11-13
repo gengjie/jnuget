@@ -373,6 +373,7 @@ public class NuspecFile implements Serializable {
                     + " быть указаны: " + entry.getTitle() + ':' + properties.getVersion());
         }
         metadata = new Metadata();
+        metadata.authors = entry.getAuthor() == null ? null : entry.getAuthor().getName();
         metadata.dependencies = new Dependencies();
         metadata.id = entry.getTitle();
         metadata.version = properties.getVersion();
@@ -382,6 +383,9 @@ public class NuspecFile implements Serializable {
         metadata.dependencies.dependencies = properties.getDependenciesList();
         metadata.description = properties.getDescription();
         metadata.requireLicenseAcceptance = properties.getRequireLicenseAcceptance();
+        metadata.projectUrl = properties.getProjectUrl();
+        metadata.iconUrl = properties.getIconUrl();
+        //TODO Дописать свойства
     }
     /**
      * Пространство имен для спецификации пакета NuGet 2011

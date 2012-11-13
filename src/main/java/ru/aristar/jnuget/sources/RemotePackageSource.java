@@ -11,15 +11,15 @@ import java.util.concurrent.ForkJoinPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.aristar.jnuget.Version;
+import ru.aristar.jnuget.client.ClientFactory;
 import ru.aristar.jnuget.client.NugetClient;
 import ru.aristar.jnuget.files.Nupkg;
 import ru.aristar.jnuget.files.RemoteNupkg;
 import static ru.aristar.jnuget.sources.AbstractPackageSource.extractLastVersion;
-import ru.aristar.jnuget.sources.push.ModifyStrategy;
 import ru.aristar.jnuget.sources.push.AfterTrigger;
 import ru.aristar.jnuget.sources.push.BeforeTrigger;
-import ru.aristar.jnuget.sources.push.NugetPushException;
 import ru.aristar.jnuget.sources.push.ModifyStrategy;
+import ru.aristar.jnuget.sources.push.NugetPushException;
 
 /**
  *
@@ -58,7 +58,8 @@ public class RemotePackageSource implements PackageSource<RemoteNupkg> {
             int groupCount = 200;
             logger.debug("Получение {} пакетов из удаленного сервера группами по {}",
                     new Object[]{count, groupCount});
-            forkJoinPool.invoke(new GetRemotePackageFeedAction(groupCount, result, 0, count, remoteStorage));
+            ClientFactory clientFactory = new ClientFactory(getUrl());
+            forkJoinPool.invoke(new GetRemotePackageFeedAction(groupCount, result, 0, count, clientFactory));
             logger.debug("Завершено получение пакетов count={}", new Object[]{result.size()});
             return result;
         } catch (IOException | URISyntaxException e) {
