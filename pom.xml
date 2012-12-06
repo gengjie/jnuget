@@ -208,6 +208,13 @@
             <layout>default</layout>
             <name>Repository for library Library[restapi]</name>
         </repository>
+        <!-- Хранилище пакетов для взаимодействия с Maven -->
+        <repository>
+            <url>http://repo1.maven.org/maven2/</url>
+            <id>maven-api</id>
+            <layout>default</layout>
+            <name>Repository for Maven API</name>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -372,6 +379,8 @@
             <artifactId>quartz</artifactId>
             <version>2.1.6</version>
         </dependency>
+        
+        <!-- Взаимодействие с Maven -->
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-core</artifactId>
@@ -383,6 +392,11 @@
             <artifactId>maven-artifact-manager</artifactId>
             <version>2.2.1</version>
             <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.indexer</groupId>
+            <artifactId>indexer-core</artifactId>
+            <version>5.1.0</version>
         </dependency>
     </dependencies>
 </project>
