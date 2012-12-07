@@ -4,23 +4,29 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.maven.index.Indexer;
 import org.apache.maven.index.context.IndexCreator;
-import ru.aristar.jnuget.Version;
-import ru.aristar.jnuget.files.MavenNupkg;
-import ru.aristar.jnuget.files.Nupkg;
-import ru.aristar.jnuget.sources.push.ModifyStrategy;
 import org.apache.maven.index.context.IndexingContext;
+import org.apache.maven.index.updater.IndexUpdateRequest;
+import org.apache.maven.index.updater.IndexUpdateResult;
 import org.apache.maven.index.updater.IndexUpdater;
+import org.apache.maven.index.updater.ResourceFetcher;
+import org.apache.maven.index.updater.WagonHelper;
 import org.apache.maven.wagon.Wagon;
+import org.apache.maven.wagon.events.TransferEvent;
+import org.apache.maven.wagon.events.TransferListener;
+import org.apache.maven.wagon.observers.AbstractTransferListener;
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.slf4j.LoggerFactory;
+import ru.aristar.jnuget.Version;
+import ru.aristar.jnuget.files.MavenNupkg;
+import ru.aristar.jnuget.files.Nupkg;
+import ru.aristar.jnuget.sources.push.ModifyStrategy;
 
 /**
  * Хранилище пакетов Maven.
@@ -80,12 +86,38 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
         // Создаем индексаторы
         List<IndexCreator> indexers = new ArrayList<>();
         indexers.add(plexusContainer.lookup(IndexCreator.class, "min"));
+        indexers.add(plexusContainer.lookup(IndexCreator.class, "jarContent"));
 
         // Контекст
         IndexingContext context = indexer.createIndexingContext("context", "local", localCache, indexDir,
                 url, null, true, true, indexers);
 
-        throw new UnsupportedOperationException("Not supported yet.");
+        TransferListener listener = new AbstractTransferListener() {
+            public void transferStarted(TransferEvent transferEvent) {
+                logger.debug(" Downloading " + transferEvent.getResource().getName());
+            }
+
+            public void transferProgress(TransferEvent transferEvent, byte[] buffer, int length) {
+            }
+
+            public void transferCompleted(TransferEvent transferEvent) {
+                logger.debug(" - Done");
+            }
+        };
+        ResourceFetcher resourceFetcher = new WagonHelper.WagonFetcher(httpWagon, listener, null, null);
+
+        Date centralContextCurrentTimestamp = context.getTimestamp();
+        IndexUpdateRequest updateRequest = new IndexUpdateRequest(context, resourceFetcher);
+        IndexUpdateResult updateResult = indexUpdater.fetchAndUpdateIndex(updateRequest);
+        // Выводим статус обновления.
+        if (updateResult.isFullUpdate()) {
+            logger.debug("Full update happened!");
+        } else if (updateResult.getTimestamp().equals(centralContextCurrentTimestamp)) {
+            logger.debug("No update needed, index is up to date!");
+        } else {
+            logger.debug("Incremental update happened, change covered " + centralContextCurrentTimestamp
+                    + " - " + updateResult.getTimestamp() + " period.");
+        }
     }
 
     @Override
