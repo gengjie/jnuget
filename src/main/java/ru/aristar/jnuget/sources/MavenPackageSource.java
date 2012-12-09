@@ -12,6 +12,7 @@ import org.apache.lucene.search.Query;
 import org.apache.maven.index.ArtifactInfo;
 import org.apache.maven.index.Field;
 import org.apache.maven.index.Indexer;
+import org.apache.maven.index.IteratorResultSet;
 import org.apache.maven.index.IteratorSearchRequest;
 import org.apache.maven.index.IteratorSearchResponse;
 import org.apache.maven.index.MAVEN;
@@ -31,8 +32,8 @@ import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonatype.aether.util.version.GenericVersionScheme;
 import org.sonatype.aether.version.InvalidVersionSpecificationException;
 import ru.aristar.jnuget.Version;
@@ -105,13 +106,16 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
                 url, null, true, true, indexers);
 
         TransferListener listener = new AbstractTransferListener() {
+            @Override
             public void transferStarted(TransferEvent transferEvent) {
                 logger.debug(" Downloading " + transferEvent.getResource().getName());
             }
 
+            @Override
             public void transferProgress(TransferEvent transferEvent, byte[] buffer, int length) {
             }
 
+            @Override
             public void transferCompleted(TransferEvent transferEvent) {
                 logger.debug(" - Done");
             }
@@ -144,7 +148,40 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
 
     @Override
     public Collection<MavenNupkg> getPackages(String id) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        try {
+            // construct the query for known GA
+            final Query groupIdQ =
+                    indexer.constructQuery(MAVEN.GROUP_ID, new SourcedSearchExpression(id));
+            final Query artifactIdQ =
+                    indexer.constructQuery(MAVEN.ARTIFACT_ID, new SourcedSearchExpression(id));
+            final BooleanQuery query = new BooleanQuery();
+            query.add(groupIdQ, Occur.MUST);
+            query.add(artifactIdQ, Occur.MUST);
+
+            // we want "nupkg" artifacts only
+            query.add(indexer.constructQuery(MAVEN.PACKAGING, new SourcedSearchExpression("nupkg")), Occur.MUST);
+            // we want main artifacts only (no classifier)
+            // Note: this below is unfinished API, needs fixing
+            query.add(indexer.constructQuery(MAVEN.CLASSIFIER, new SourcedSearchExpression(Field.NOT_PRESENT)),
+                    Occur.MUST_NOT);
+
+            final IteratorSearchRequest request = new IteratorSearchRequest(query);
+            final IteratorSearchResponse response = indexer.searchIterator(request);
+            
+            Collection<MavenNupkg> result = new ArrayList<>();
+            final IteratorResultSet cursor = response.getResults();
+            while (cursor.hasNext()) {
+                ArtifactInfo info = cursor.next();
+                //
+                // MavenNupkg pack
+                // result.add(pack);
+                throw new UnsupportedOperationException(info.toString());
+            }
+        } catch (IOException ex) {
+            logger.error("Ошибка при поиске пакета id:" + id, ex);
+        }
+
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -185,7 +222,7 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
         } catch (InvalidVersionSpecificationException | IOException ex) {
             logger.error("Ошибка при поиске пакета id:" + id + " версии:" + version, ex);
         }
-        
+
         throw new UnsupportedOperationException();
     }
 
