@@ -6,9 +6,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.maven.index.ArtifactInfo;
+import org.apache.maven.index.Field;
 import org.apache.maven.index.Indexer;
+import org.apache.maven.index.IteratorSearchRequest;
+import org.apache.maven.index.IteratorSearchResponse;
+import org.apache.maven.index.MAVEN;
 import org.apache.maven.index.context.IndexCreator;
 import org.apache.maven.index.context.IndexingContext;
+import org.apache.maven.index.expr.SourcedSearchExpression;
 import org.apache.maven.index.updater.IndexUpdateRequest;
 import org.apache.maven.index.updater.IndexUpdateResult;
 import org.apache.maven.index.updater.IndexUpdater;
@@ -23,6 +32,9 @@ import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.sonatype.aether.util.version.GenericVersionScheme;
+import org.sonatype.aether.version.InvalidVersionSpecificationException;
 import ru.aristar.jnuget.Version;
 import ru.aristar.jnuget.files.MavenNupkg;
 import ru.aristar.jnuget.files.Nupkg;
@@ -37,7 +49,7 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
 
     private final String INDEX = "index";
     private final String CACHE = "cache";
-    protected org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
+    protected Logger logger = LoggerFactory.getLogger(this.getClass());
     private String url;
     private File storage;
     private PlexusContainer plexusContainer;
@@ -142,7 +154,39 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
 
     @Override
     public MavenNupkg getPackage(String id, Version version) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        try {
+            final GenericVersionScheme versionScheme = new GenericVersionScheme();
+            final org.sonatype.aether.version.Version mavenVersion = versionScheme.parseVersion(version.toString());
+
+            // construct the query for known GA
+            final Query groupIdQ =
+                    indexer.constructQuery(MAVEN.GROUP_ID, new SourcedSearchExpression(id));
+            final Query artifactIdQ =
+                    indexer.constructQuery(MAVEN.ARTIFACT_ID, new SourcedSearchExpression(id));
+            final Query versionQ = indexer.constructQuery(MAVEN.VERSION, new SourcedSearchExpression(mavenVersion.toString()));
+            final BooleanQuery query = new BooleanQuery();
+            query.add(groupIdQ, Occur.MUST);
+            query.add(artifactIdQ, Occur.MUST);
+            query.add(versionQ, Occur.MUST);
+
+            // we want "nupkg" artifacts only
+            query.add(indexer.constructQuery(MAVEN.PACKAGING, new SourcedSearchExpression("nupkg")), Occur.MUST);
+            // we want main artifacts only (no classifier)
+            // Note: this below is unfinished API, needs fixing
+            query.add(indexer.constructQuery(MAVEN.CLASSIFIER, new SourcedSearchExpression(Field.NOT_PRESENT)),
+                    Occur.MUST_NOT);
+
+            final IteratorSearchRequest request = new IteratorSearchRequest(query);
+            final IteratorSearchResponse response = indexer.searchIterator(request);
+            if (response.getResults().hasNext()) {
+                ArtifactInfo info = response.getResults().next();
+                throw new UnsupportedOperationException(info.toString());
+            }
+        } catch (InvalidVersionSpecificationException | IOException ex) {
+            logger.error("Ошибка при поиске пакета id:" + id + " версии:" + version, ex);
+        }
+        
+        throw new UnsupportedOperationException();
     }
 
     @Override
