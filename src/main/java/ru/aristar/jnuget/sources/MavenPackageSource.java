@@ -1,14 +1,27 @@
 package ru.aristar.jnuget.sources;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.maven.artifact.deployer.ArtifactDeployer;
+import org.apache.maven.artifact.deployer.ArtifactDeploymentException;
+import org.apache.maven.artifact.deployer.DefaultArtifactDeployer;
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.repository.DefaultArtifactRepository;
+import org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout;
 import org.apache.maven.index.ArtifactInfo;
 import org.apache.maven.index.Field;
 import org.apache.maven.index.Indexer;
@@ -38,7 +51,9 @@ import org.sonatype.aether.util.version.GenericVersionScheme;
 import org.sonatype.aether.version.InvalidVersionSpecificationException;
 import ru.aristar.jnuget.Version;
 import ru.aristar.jnuget.files.MavenNupkg;
+import ru.aristar.jnuget.files.NugetFormatException;
 import ru.aristar.jnuget.files.Nupkg;
+import ru.aristar.jnuget.files.TempNupkgFile;
 import ru.aristar.jnuget.sources.push.ModifyStrategy;
 
 /**
@@ -167,7 +182,7 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
 
             final IteratorSearchRequest request = new IteratorSearchRequest(query);
             final IteratorSearchResponse response = indexer.searchIterator(request);
-            
+
             Collection<MavenNupkg> result = new ArrayList<>();
             final IteratorResultSet cursor = response.getResults();
             while (cursor.hasNext()) {
@@ -228,7 +243,25 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
 
     @Override
     public boolean pushPackage(Nupkg file) throws IOException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (getPushStrategy().canPush()) {
+            try {
+                ArtifactDeployer deployer = new DefaultArtifactDeployer();
+                ArtifactRepository repository = new DefaultArtifactRepository(url, url, new DefaultRepositoryLayout());
+                TempNupkgFile nupkgFile;
+                try {
+                    nupkgFile = new TempNupkgFile(file);
+                } catch (NugetFormatException ex) {
+                    logger.error("Ошибка загрузки артефакта.", ex);
+                    return false;
+                }
+                deployer.deploy(nupkgFile.getFile(), null, repository, repository);
+                return true;
+            } catch (ArtifactDeploymentException ex) {
+                logger.error("Ошибка загрузки артефакта.", ex);
+                return false;
+            }
+        }
+        return false;
     }
 
     @Override
