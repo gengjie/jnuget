@@ -1,4 +1,4 @@
-package ru.aristar.jnuget.sources;
+﻿package ru.aristar.jnuget.sources;
 
 import java.io.File;
 import java.io.IOException;
