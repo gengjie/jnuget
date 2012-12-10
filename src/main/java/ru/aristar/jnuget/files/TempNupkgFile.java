@@ -49,8 +49,7 @@ public class TempNupkgFile extends ClassicNupkg implements Nupkg, AutoCloseable 
      * @param targetFile файл, в который необходимо скопировать пакет
      * @return файл с данными
      * @throws IOException ошибка чтения/записи
-     * @throws NoSuchAlgorithmException в системе не установлен алгоритм для
-     * расчета значения HASH
+     * @throws NoSuchAlgorithmException в системе не установлен алгоритм для расчета значения HASH
      */
     private static Hash copyDataAndCalculateHash(InputStream inputStream, File targetFile) throws IOException, NoSuchAlgorithmException {
         MessageDigest messageDigest = MessageDigest.getInstance(Hash.ALGORITHM_NAME);
@@ -68,11 +67,21 @@ public class TempNupkgFile extends ClassicNupkg implements Nupkg, AutoCloseable 
      *
      * @param inputStream поток с пакетом
      * @throws IOException ошибка чтения данных
-     * @throws NugetFormatException поток не содержит пакет NuGet или формат
-     * пакета - не соответствует стандарту
+     * @throws NugetFormatException поток не содержит пакет NuGet или формат пакета - не соответствует стандарту
      */
     public TempNupkgFile(InputStream inputStream) throws IOException, NugetFormatException {
         this(inputStream, new Date());
+    }
+
+    /**
+     * Создает пакет NuGet из другого пакета
+     *
+     * @param nupkg исходный пакет
+     * @throws IOException ошибка чтения данных
+     * @throws NugetFormatException поток не содержит пакет NuGet или формат
+     */
+    public TempNupkgFile(Nupkg nupkg) throws IOException, NugetFormatException {
+        this(nupkg.getStream());
     }
 
     /**
@@ -81,8 +90,7 @@ public class TempNupkgFile extends ClassicNupkg implements Nupkg, AutoCloseable 
      * @param inputStream поток с пакетом
      * @param updated дата обновления пакета
      * @throws IOException ошибка чтения данных
-     * @throws NugetFormatException поток не содержит пакет NuGet или формат
-     * пакета - не соответствует стандарту
+     * @throws NugetFormatException поток не содержит пакет NuGet или формат пакета - не соответствует стандарту
      */
     public TempNupkgFile(InputStream inputStream, Date updated) throws IOException, NugetFormatException {
         try {
@@ -127,5 +135,14 @@ public class TempNupkgFile extends ClassicNupkg implements Nupkg, AutoCloseable 
     public void load() throws IOException {
         getId();
         getVersion();
+    }
+
+    /**
+     * Файл пакета
+     *
+     * @return файл пакета
+     */
+    public File getFile() {
+        return file;
     }
 }
