@@ -1,18 +1,11 @@
 package ru.aristar.jnuget.sources;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -254,7 +247,7 @@ public class MavenPackageSource implements PackageSource<MavenNupkg> {
                     logger.error("Ошибка загрузки артефакта.", ex);
                     return false;
                 }
-                deployer.deploy(nupkgFile.getFile(), null, repository, repository);
+                deployer.deploy(nupkgFile.getFile(), new MavenNupkg(file).getArtifact(), repository, repository);
                 return true;
             } catch (ArtifactDeploymentException ex) {
                 logger.error("Ошибка загрузки артефакта.", ex);

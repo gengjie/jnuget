@@ -6,6 +6,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.EnumSet;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.ArtifactHandler;
 import ru.aristar.jnuget.Version;
 import ru.aristar.jnuget.files.nuspec.NuspecFile;
 
@@ -34,11 +36,25 @@ public class MavenNupkg implements Nupkg {
      * @param pack Пакет для декорирования.
      */
     public MavenNupkg(Nupkg pack) {
-        this.pack = pack;
+        if (pack instanceof MavenNupkg) {
+            MavenNupkg mavenPack = (MavenNupkg) pack;
+            this.pack = mavenPack.pack;
+            this.artifact = mavenPack.artifact;
+        } else {
+            this.pack = pack;
+        }
     }
 
+    /**
+     * Возвращает артефакт
+     *
+     * @return
+     */
     public Artifact getArtifact() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (artifact == null) {
+            artifact = new NupkgArtifact(this, null);
+        }
+        return artifact;
     }
 
     @Override
@@ -89,5 +105,21 @@ public class MavenNupkg implements Nupkg {
     @Override
     public void load() throws IOException {
         pack.load();
+    }
+
+    /**
+     * Артефакт файла Nupkg.
+     */
+    private class NupkgArtifact extends DefaultArtifact implements Artifact {
+
+        /**
+         * Создает артефакт файла Nupkg.
+         *
+         * @param nupkg Исходный файл
+         * @param artifactHandler
+         */
+        public NupkgArtifact(Nupkg nupkg, ArtifactHandler artifactHandler) {
+            super(nupkg.getId(), nupkg.getId(), nupkg.getVersion().toString(), "compile", "nupkg", "", artifactHandler);
+        }
     }
 }
