@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+    <display-name>JNuGet</display-name>
+    <listener>
+        <listener-class>ru.aristar.jnuget.common.LauncherContextListener</listener-class>
+    </listener>
+    <context-param>
+        <param-name>javax.faces.FACELETS_LIBRARIES</param-name>
+        <param-value>/WEB-INF/tomahawk.taglib.xml;/WEB-INF/aristar.taglib.xml</param-value>
+    </context-param>
+    <context-param>
+        <param-name>javax.faces.RESOURCE_EXCLUDES</param-name>
+        <param-value>.class .jsp .jspx .properties .groovy</param-value>
+    </context-param>
+    <filter>
+        <filter-name>MyFacesExtensionsFilter</filter-name>
+        <filter-class>org.apache.myfaces.webapp.filter.ExtensionsFilter</filter-class>
+        <init-param>
+            <param-name>uploadMaxFileSize</param-name>
+            <param-value>15m</param-value>
+        </init-param>
+    </filter>
+    <filter-mapping>
+        <filter-name>MyFacesExtensionsFilter</filter-name>
+        <servlet-name>Faces Servlet</servlet-name>
+    </filter-mapping>
+    <servlet>
+        <servlet-name>ServletAdaptor</servlet-name>
+        <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+        <init-param>
+            <param-name>com.sun.jersey.config.property.packages</param-name>
+            <param-value>ru.aristar.jnuget</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet>
+        <servlet-name>Faces Servlet</servlet-name>
+        <servlet-class>javax.faces.webapp.FacesServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>Faces Servlet</servlet-name>
+        <url-pattern>*.xhtml</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ServletAdaptor</servlet-name>
+        <url-pattern>/storages/*</url-pattern>
+    </servlet-mapping>
+    <session-config>
+        <session-timeout>
+            30
+        </session-timeout>
+    </session-config>
+    <welcome-file-list>
+        <welcome-file>index.xhtml</welcome-file>
+    </welcome-file-list>
+    <!-- Права доступа -->
+    <login-config>
+        <auth-method>FORM</auth-method>
+        <form-login-config>
+            <form-login-page>/login.xhtml</form-login-page>
+            <form-error-page>/login.xhtml</form-error-page>
+        </form-login-config>
+    </login-config>
+    <security-role>
+        <description>Администраторы сервера</description>
+        <role-name>jnuget-admin</role-name>
+    </security-role>
+    <security-role>
+        <description>Пользователи, имеющие доступ к GUI</description>
+        <role-name>jnuget-gui</role-name>
+    </security-role>
+    <security-role>
+        <description/>
+        <role-name>jnuget-read</role-name>
+    </security-role>
+    <security-role>
+        <description/>
+        <role-name>jnuget-push</role-name>
+    </security-role>
+    <security-role>
+        <description/>
+        <role-name>jnuget-delete</role-name>
+    </security-role>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/login.xhtml</location>
+    </error-page>
+    <security-constraint>
+        <display-name>GUI view</display-name>
+        <web-resource-collection>
+            <web-resource-name>GUI Area</web-resource-name>
+            <url-pattern>/sourceManager.xhtml</url-pattern>
+            <url-pattern>/packageDetails.xhtml</url-pattern>
+            <url-pattern>/storageContents.xhtml</url-pattern>
+            <url-pattern>/packageContent.xhtml</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>jnuget-gui</role-name>
+            <role-name>jnuget-admin</role-name>
+        </auth-constraint>
+    </security-constraint>
+    <security-constraint>
+        <display-name>Administrator</display-name>
+        <web-resource-collection>
+            <web-resource-name>Administrator Area</web-resource-name>
+            <url-pattern>/storageOptions.xhtml</url-pattern>
+            <url-pattern>/usersOptions.xhtml</url-pattern>
+            <url-pattern>/commonOptions.xhtml</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>jnuget-admin</role-name>
+        </auth-constraint>
+    </security-constraint>
+</web-app>

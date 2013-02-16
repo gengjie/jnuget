@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<options>  
+    <storages>
+        <storage class="TEST_CLASS_1" indexed="false" canPush="true">
+            <properties>
+                <property name="folderName" value="TEST_FOLDER_1"/>
+            </properties>           
+        </storage>
+        <storage class="TEST_CLASS_2" indexed="true" canDelete="true">
+            <properties>
+                <property name="folderName" value="TEST_FOLDER_2"/>
+            </properties>
+        </storage>
+    </storages>
+</options>
