@@ -56,6 +56,13 @@ public class Dependency implements Serializable {
     }
 
     /**
+     * @return версия пакета
+     */
+    public VersionRange getVersionRange() {
+        return versionRange;
+    }
+
+    /**
      * @return строковое представление диапазона версий
      */
     @XmlAttribute(name = "version")

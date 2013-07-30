@@ -52,7 +52,7 @@
                         <h:link value="#{dependency.id}" outcome="packageDetails">
                             <f:param name="storageId" value="#{packageDetails.storageName}"/>
                             <f:param name="packageId" value="#{dependency.id}"/>
-                            <f:param name="packageVersion" value="#{dependency.versionRangeString}"/>
+                            <f:param name="packageVersion" value="#{dependency.versionRange.topVersion}"/>
                         </h:link>
                     </h:column>
                     <h:column>
