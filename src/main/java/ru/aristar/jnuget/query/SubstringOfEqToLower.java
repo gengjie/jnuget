@@ -1,16 +1,16 @@
 package ru.aristar.jnuget.query;
 
+import static java.text.MessageFormat.format;
 import java.util.ArrayList;
 import java.util.Collection;
 import ru.aristar.jnuget.files.NugetFormatException;
 import ru.aristar.jnuget.files.Nupkg;
 import ru.aristar.jnuget.sources.PackageSource;
-import static java.text.MessageFormat.format;
 
 /**
  * Выражение сравнения идентификатора без учета регистра
  *
- * @author sviridov
+ * @author Dmitry Sviridov
  */
 public class SubstringOfEqToLower extends AbstractExpression {
 
@@ -31,6 +31,9 @@ public class SubstringOfEqToLower extends AbstractExpression {
 
     @Override
     public Collection<? extends Nupkg> execute(PackageSource<? extends Nupkg> packageSource) {
+        if (isEmptyFilter()) {
+            return packageSource.getPackages();
+        }
         ArrayList<Nupkg> result = new ArrayList<>();
         for (Nupkg nupkg : packageSource.getPackages()) {
             if (accept(nupkg)) {
@@ -45,8 +48,7 @@ public class SubstringOfEqToLower extends AbstractExpression {
      *
      * @param tokens очередь токенов
      * @return выражение сравнения идентификатора без учета регистра
-     * @throws NugetFormatException токены не соответствуют формату запроса
-     * NuGet
+     * @throws NugetFormatException токены не соответствуют формату запроса NuGet
      */
     public static SubstringOfEqToLower parse(java.util.Queue<java.lang.String> tokens) throws NugetFormatException {
         assertToken(tokens.poll(), "(");
@@ -79,11 +81,14 @@ public class SubstringOfEqToLower extends AbstractExpression {
 
     @Override
     public boolean hasFilterPriority() {
-        return true;
+        return !isEmptyFilter();
     }
 
     @Override
     public boolean accept(Nupkg nupkg) {
+        if (isEmptyFilter()) {
+            return true;
+        }
         try {
             switch (field.toLowerCase()) {
                 case "id": {
@@ -101,6 +106,13 @@ public class SubstringOfEqToLower extends AbstractExpression {
         } catch (NugetFormatException e) {
             return false;
         }
+    }
+
+    /**
+     * @return <b>true</b>, если фильтр пустой
+     */
+    private boolean isEmptyFilter() {
+        return value == null || value.equals("");
     }
 
     @Override
