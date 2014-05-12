@@ -103,7 +103,7 @@ public class QueryLexer {
                 return parse(tokens, stack);
             }
 
-            case "IsAbsoluteLatestVersion":
+            case "isabsolutelatestversion":
             case "islatestversion": {
                 Expression expression = new LatestVersionExpression();
                 checkForAndExpression(stack, expression);
