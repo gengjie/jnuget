@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
@@ -65,6 +66,18 @@ public class ClassicNupkg implements Nupkg {
      * Логгер
      */
     protected transient Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    /**
+     * Метод десериализующий данные
+     *
+     * @param in поток с данными объекта
+     * @throws IOException ошибка чтения данных
+     * @throws ClassNotFoundException искомый класс не найден
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        this.logger = LoggerFactory.getLogger(this.getClass());
+    }
 
     /**
      * Конструктор используется в классах потомках для пустой инициализации
@@ -213,8 +226,7 @@ public class ClassicNupkg implements Nupkg {
      * @param packageStream поток с пакетом
      * @return файл спецификации
      * @throws IOException ошибка чтения
-     * @throws NugetFormatException XML в архиве пакета не соответствует
-     * спецификации NuGet
+     * @throws NugetFormatException XML в архиве пакета не соответствует спецификации NuGet
      */
     protected NuspecFile loadNuspec(InputStream packageStream) throws IOException, NugetFormatException {
         try (ZipInputStream zipInputStream = new ZipInputStream(packageStream);) {
@@ -256,8 +268,8 @@ public class ClassicNupkg implements Nupkg {
     /**
      * Выражение разбора строки имени файла
      */
-    private final static Pattern parser =
-            Pattern.compile("^(.+?)\\.(" + Version.VERSION_FORMAT + ")" + Nupkg.DEFAULT_EXTENSION + "$");
+    private final static Pattern parser
+            = Pattern.compile("^(.+?)\\.(" + Version.VERSION_FORMAT + ")" + Nupkg.DEFAULT_EXTENSION + "$");
 
     /**
      * Читает список фреймворков из архива пакета
