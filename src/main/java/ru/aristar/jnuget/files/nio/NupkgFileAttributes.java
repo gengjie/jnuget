@@ -63,6 +63,6 @@ class NupkgFileAttributes implements BasicFileAttributes {
 
     @Override
     public Object fileKey() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return null;
     }
 }

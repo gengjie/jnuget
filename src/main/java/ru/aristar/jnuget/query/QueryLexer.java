@@ -13,8 +13,7 @@ import static java.text.MessageFormat.format;
 public class QueryLexer {
 
     /**
-     * Проверяет наличие в стеке предыдущей операции и если это операция AND
-     * изменяет ее приоритет
+     * Проверяет наличие в стеке предыдущей операции и если это операция AND изменяет ее приоритет
      *
      * @param stack стек с выражениями
      * @param expression последнее распознанное выражение
@@ -30,8 +29,7 @@ public class QueryLexer {
     }
 
     /**
-     * Создает дерево выражений, на основе очереди токенов и стека ранее
-     * распознаных выражений
+     * Создает дерево выражений, на основе очереди токенов и стека ранее распознаных выражений
      *
      * @param tokens очередь токенов
      * @param stack стека ранее распознаных выражений
@@ -105,6 +103,7 @@ public class QueryLexer {
                 return parse(tokens, stack);
             }
 
+            case "IsAbsoluteLatestVersion":
             case "islatestversion": {
                 Expression expression = new LatestVersionExpression();
                 checkForAndExpression(stack, expression);
